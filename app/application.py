@@ -1,8 +1,41 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from customer_api.customers import Customer
 
 app = FastAPI()
+
+# allow CORS setting
+origins = [
+    '*',
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# security setting
+# https://geekflare.com/http-header-implementation/https://geekflare.com/http-header-implementation/
+HEADERS = {
+    # CORS setting
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "*",
+    "Access-Control-Allow-Headers": "*",
+    # security setting
+    "X-Frame-Options": "SAMEORIGIN",
+    "X-Content-Type-Options": "nosniff",
+    "X-XSS-Protection": "1; mode=block",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    # enforcement of Certificate Transparency for 24 hours
+    "Expect-CT": "max-age=86400, enforce",
+    "Content-Security-Policy": "default-src https:"
+}
+
 
 class Facility(BaseModel):
     name: str
