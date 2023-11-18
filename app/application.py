@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from loguru import logger
 from customer_api.customers import Customer
+from facilities_api.facilities import AirportFacilities
+
+
 
 app = FastAPI()
 
@@ -37,23 +40,6 @@ HEADERS = {
 }
 
 
-class Facility(BaseModel):
-    name: str
-    type: str
-
-facilities = {
-    "lhr": [
-        Facility(name="Lounge A", type="lounge"),
-        Facility(name="Runway 1", type="runway"), 
-        Facility(name="Hangar 1", type="hangar")
-    ],
-    "jfk": [
-        Facility(name="Lounge B", type="lounge"),
-        Facility(name="Runway 2", type="runway"),
-        Facility(name="Hangar 2", type="hangar")
-    ]
-}
-
 @app.get("/")
 async def health_check():
     return {"message": "Customer Info API is running"}
@@ -68,4 +54,39 @@ async def customer_flights(pid: str):
 
 @app.get("/v1/facilities/{airport}")
 def get_facilities(airport: str, type: str):
-    return [f for f in facilities[airport] if f.type == type]
+    res = {
+        "data": [],
+        "success": False,
+        "message": ""
+    }
+
+    info = AirportFacilities(airport)
+    facility_ids = info.get_ids_by_type(type)
+    logger.debug(f"facility_id: {facility_ids}")
+    
+    if type == "gate":
+        for id in facility_ids:
+            gate_info = info.get_gate_info(id)
+            res["data"].append(gate_info)
+        res["success"] = True
+        return res
+
+    for id in facility_ids:
+        data = {
+            "facility_id": id,
+            "name": "",
+            "opening_hour": ""
+        }
+        data["name"] = info.get_name_by_id(id)
+        data["opening_hour"] = info.get_opening_hours(id)
+        res["data"].append(data)
+    
+    res["success"] = True
+
+    return res
+        
+
+        
+
+
+
